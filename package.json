@@ -5,6 +5,7 @@
   "type": "module",
   "license": "MIT",
   "keywords": ["pi", "pi-extension", "scnet", "llm", "provider"],
+  "pi": {
     "extensions": ["./index.ts"]
   }
 }

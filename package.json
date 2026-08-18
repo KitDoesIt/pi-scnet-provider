@@ -1,0 +1,11 @@
+{
+  "name": "pi-scnet-provider",
+  "version": "1.0.0",
+  "description": "SCNet provider extension for pi — OpenAI-compatible endpoint https://api.scnet.cn/api/llm/v1 with dynamic model discovery and caching",
+  "type": "module",
+  "license": "MIT",
+  "keywords": ["pi", "pi-extension", "scnet", "llm", "provider"],
+  "pi": {
+    "extensions": ["./index.ts"]
+  }
+}

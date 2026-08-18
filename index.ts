@@ -170,11 +170,28 @@ function isBaseVariant(id: string): boolean {
   return /-base$/i.test(id);
 }
 
-/** Prefer gateways closest to SCNet (token plans), then official labs, then resellers. */
-function providerScore(provider: string): number {
-  if (provider.includes("token-plan")) return 100;
-  if (["deepseek", "minimax", "minimax-cn", "moonshotai", "moonshotai-cn", "zhipuai", "alibaba", "xiaomi"].includes(provider)) return 80;
-  if (provider === "opencode" || provider === "opencode-go") return 70;
+/** Model families and the providers that are their official source. */
+const FAMILY_LABS: Array<{ prefixes: string[]; providers: string[] }> = [
+  { prefixes: ["deepseek"], providers: ["deepseek"] },
+  { prefixes: ["kimi"], providers: ["moonshotai", "moonshotai-cn", "kimi-coding"] },
+  { prefixes: ["glm"], providers: ["zhipuai", "zhipuai-coding-plan"] },
+  { prefixes: ["minimax"], providers: ["minimax", "minimax-cn", "minimax-coding-plan", "minimax-cn-coding-plan"] },
+  { prefixes: ["qwen", "qwq"], providers: ["qwen-token-plan", "qwen-token-plan-cn", "qwen-token-plan-individual", "alibaba", "alibaba-cn", "alibaba-coding-plan", "alibaba-coding-plan-cn", "alibaba-token-plan", "alibaba-token-plan-cn"] },
+  { prefixes: ["mimo"], providers: ["xiaomi", "xiaomi-token-plan-cn", "xiaomi-token-plan-ams", "xiaomi-token-plan-sgp"] },
+];
+
+/**
+ * Prefer the official source of the model's family — its compat describes the
+ * model's native API (e.g. deepseek's "deepseek" thinking format), while a
+ * cross-listing on another gateway (e.g. qwen-token-plan serving DeepSeek)
+ * carries that gateway's quirks. Then coding-plan gateways, then resellers.
+ */
+function providerScore(provider: string, modelId: string): number {
+  const normId = normalize(modelId);
+  const family = FAMILY_LABS.find((f) => f.prefixes.some((p) => normId.startsWith(p)));
+  if (family && family.providers.includes(provider)) return 100;
+  if (provider === "opencode" || provider === "opencode-go") return 80;
+  if (provider.includes("token-plan")) return 75;
   return 50;
 }
 
@@ -182,10 +199,10 @@ function apiScore(api: string): number {
   return api === "openai-completions" ? 3 : api === "openai-responses" ? 2 : 1;
 }
 
-function pickBest(entries: CatalogEntry[]): CatalogEntry | undefined {
+function pickBest(entries: CatalogEntry[], modelId: string): CatalogEntry | undefined {
   if (entries.length === 0) return undefined;
   return [...entries].sort(
-    (a, b) => providerScore(b.provider) + apiScore(b.api) - (providerScore(a.provider) + apiScore(a.api)),
+    (a, b) => providerScore(b.provider, modelId) + apiScore(b.api) - (providerScore(a.provider, modelId) + apiScore(a.api)),
   )[0];
 }
 
@@ -241,20 +258,21 @@ function loadCatalog(): Map<string, CatalogEntry[]> {
 function findMatch(id: string, catalog: Map<string, CatalogEntry[]>): CatalogEntry | undefined {
   if (isBaseVariant(id)) return undefined; // base variants don't inherit chat settings
   const norm = normalize(id);
-  // 1. exact normalized match
+  // 1. exact normalized match and/or version-stripped match — compete on quality
+  const candidates: CatalogEntry[] = [];
   const exact = catalog.get(norm);
-  if (exact) return pickBest(exact);
-  // 2. match after stripping version/date suffix
+  if (exact) candidates.push(...exact);
   const stripped = stripVersion(id);
   if (stripped !== id) {
     const s = catalog.get(normalize(stripped));
-    if (s) return pickBest(s);
+    if (s) candidates.push(...s);
   }
-  // 3. containment (both directions), min length to avoid false positives
+  if (candidates.length > 0) return pickBest(candidates, id);
+  // 2. containment (both directions), min length to avoid false positives
   for (const [key, entries] of catalog) {
     if (key.length < 12) continue;
     if ((norm.includes(key) || key.includes(norm)) && Math.abs(key.length - norm.length) < 20) {
-      return pickBest(entries);
+      return pickBest(entries, id);
     }
   }
   return undefined;

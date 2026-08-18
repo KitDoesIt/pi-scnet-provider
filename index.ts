@@ -73,8 +73,8 @@ function readCache(): ModelCache | undefined {
 function writeCache(cache: ModelCache) {
   try {
     writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2), "utf8");
-  } catch (err) {
-    console.error(`[scnet] failed to write model cache: ${String(err)}`);
+  } catch {
+    // keep current models; the refresh is retried on the next startup
   }
 }
 
@@ -119,22 +119,15 @@ async function fetchAndRegister(
 ): Promise<ProviderModelConfig[] | undefined> {
   try {
     const ids = await fetchModelIds(apiKey);
-    if (ids.length === 0) {
-      console.error("[scnet] /models returned an empty list; keeping current models");
-      return undefined;
-    }
+    if (ids.length === 0) return undefined;
     const models = toModelConfigs(ids);
     const previous = readCache()?.models ?? [];
     writeCache({ fetchedAt: Date.now(), models });
     if (JSON.stringify(models) !== JSON.stringify(previous)) {
       register(pi, apiKey, models);
-      console.error(`[scnet] registered ${models.length} models`);
     }
     return models;
-  } catch (err) {
-    console.error(
-      `[scnet] model refresh failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
+  } catch {
     return undefined;
   }
 }
@@ -173,11 +166,6 @@ function register(pi: ExtensionAPI, apiKey: string, models: ProviderModelConfig[
 
 export default async function (pi: ExtensionAPI) {
   const apiKey = resolveApiKey();
-  if (!apiKey) {
-    console.error(
-      "[scnet] no API key found. Set SCNET_API_KEY or store one with /login scnet.",
-    );
-  }
   // Start with the cached list — no network on the startup path.
   const cached = readCache();
   register(pi, apiKey, cached?.models ?? []);

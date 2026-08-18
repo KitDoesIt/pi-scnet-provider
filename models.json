@@ -267,6 +267,14 @@
         "maxTokensField": "max_tokens",
         "thinkingFormat": "deepseek",
         "requiresReasoningContentOnAssistantMessages": true
+      },
+      "thinkingLevelMap": {
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": "high",
+        "xhigh": null,
+        "max": "max"
       }
     },
     {
@@ -311,6 +319,14 @@
         "maxTokensField": "max_tokens",
         "thinkingFormat": "deepseek",
         "requiresReasoningContentOnAssistantMessages": true
+      },
+      "thinkingLevelMap": {
+        "minimal": null,
+        "low": null,
+        "medium": null,
+        "high": "high",
+        "xhigh": null,
+        "max": "max"
       }
     }
   ]

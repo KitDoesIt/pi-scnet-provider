@@ -6,7 +6,7 @@ A [pi](https://github.com/earendil-works/pi) coding agent extension that registe
 https://api.scnet.cn/api/llm/v1
 ```
 
-The model list is fetched dynamically from `/models`, so new models appear automatically — no hardcoded catalog to maintain.
+The model list ships statically in [`models.json`](models.json), generated from the **scnet-token-plan vendor on [models.dev](https://models.dev)** — the models SCNet token plans actually serve. No `/models` fetch, no catalog lookup, no network at startup.
 
 ## Install
 
@@ -31,32 +31,22 @@ Resolution order: `SCNET_API_KEY` env var → `auth.json` entry → (none).
 
 ```bash
 pi --provider scnet --model "Kimi-K2.7-Code"
-pi --provider scnet --model "DeepSeek-V4-Pro"
+pi --provider scnet --model "DeepSeek-V4-Flash"
 ```
 
 Or in interactive mode: `/model`, then filter by the `scnet` provider.
 
 ## How it works
 
-- **Startup is never blocked by the network.** The cached model list (from `~/.pi/agent/scnet-models.json`) is registered immediately.
-- **Always fresh.** A background refresh fetches `/models` on every startup and live-updates the registered models when the list changes.
-- **10-minute fetch lock.** The endpoint is not hammered: a persisted `fetchedAt` timestamp plus an in-process guard skip the fetch if it ran less than 10 minutes ago.
-- **Cold start.** On the very first run (no cache), the factory performs one bounded fetch (10s timeout) so the model picker works immediately.
-- **Fetch failures** keep the current models and log a `[scnet]` error instead of wiping the provider.
+- **Zero network at startup.** The extension registers the static model list from [`models.json`](models.json) immediately — no `/models` fetch, no cache, no lock, nothing to go stale.
+- **Settings from models.dev.** Context window, max output tokens, reasoning support, and vision (`input` modalities) come from models.dev's `scnet-token-plan` vendor, which models SCNet token plans actually serve.
+- **Compat baked from verified gateway behavior:**
+  - `deepseek` / `kimi` / `glm` models → `thinkingFormat: "deepseek"` (`thinking: { type: "enabled" }` + `reasoning_effort`)
+  - `minimax` / `mimo` models → no thinking format; pi sends plain `reasoning_effort` only (MiniMax rejects the `thinking` param)
+  - all models → `maxTokensField: "max_tokens"`, `supportsDeveloperRole: false`, `supportsStore: false`
+- **Dated variants** like `DeepSeek-V4-Flash-0731` ship with the same settings as their base model.
 
-## Model settings
-
-Every SCNet model is enriched **at runtime** with pi's own bundled provider catalog — the same settings pi uses for its built-in models, matched by model id:
-
-- `reasoning` + `thinkingLevelMap` (thinking levels)
-- `input` modalities (vision: `text` + `image` where pi knows the model supports it)
-- `cost` (per-million-token pricing from pi's catalog)
-- `contextWindow` and `maxTokens`
-- `compat` (thinking format, token field, etc., copied from pi's OpenAI-compatible entries)
-
-No download needed — pi ships the catalog. Models pi's catalog doesn't know (base variants, embeddings, SCNet exclusives like `SCNet-Max`) get conservative defaults: text-only, no reasoning params, 128K context, 16K max output.
-
-Enriched settings are persisted in the cache and survive background refreshes. Override any model in `~/.pi/agent/models.json` — pi composes those overrides above registered providers.
+Override any model in `~/.pi/agent/models.json` — pi composes those overrides above registered providers.
 
 ## Development
 

@@ -44,19 +44,19 @@ Or in interactive mode: `/model`, then filter by the `scnet` provider.
 - **Cold start.** On the very first run (no cache), the factory performs one bounded fetch (10s timeout) so the model picker works immediately.
 - **Fetch failures** keep the current models and log a `[scnet]` error instead of wiping the provider.
 
-## Model defaults
+## Model settings
 
-Models are registered with conservative defaults:
+Every SCNet model is enriched **at runtime** with pi's own bundled provider catalog — the same settings pi uses for its built-in models, matched by model id:
 
-| Field | Default |
-|---|---|
-| `reasoning` | `false` — no thinking params are sent (some models reject them), but SCNet models emit `reasoning_content` natively and pi displays it as thinking |
-| `input` | `["text"]` |
-| `contextWindow` | 128000 |
-| `maxTokens` | 16384 |
-| `cost` | 0 (usage tracking disabled) |
+- `reasoning` + `thinkingLevelMap` (thinking levels)
+- `input` modalities (vision: `text` + `image` where pi knows the model supports it)
+- `cost` (per-million-token pricing from pi's catalog)
+- `contextWindow` and `maxTokens`
+- `compat` (thinking format, token field, etc., copied from pi's OpenAI-compatible entries)
 
-Override any model in `~/.pi/agent/models.json` if you want different settings (e.g. per-model thinking control).
+No download needed — pi ships the catalog. Models pi's catalog doesn't know (base variants, embeddings, SCNet exclusives like `SCNet-Max`) get conservative defaults: text-only, no reasoning params, 128K context, 16K max output.
+
+Enriched settings are persisted in the cache and survive background refreshes. Override any model in `~/.pi/agent/models.json` — pi composes those overrides above registered providers.
 
 ## Development
 

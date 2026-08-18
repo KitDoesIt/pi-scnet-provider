@@ -117,7 +117,12 @@ const CATALOG_APIS = new Set([
   "bedrock-converse-stream",
 ]);
 
-/** Candidate locations for pi-ai's bundled provider data (dist/providers/data/*.json). */
+/**
+ * Candidate locations for pi-ai's bundled provider data (dist/providers/data/*.json).
+ *
+ * Only the bundled catalog is used — deliberately NOT ~/.pi/agent/models-store.json,
+ * which is a sparse network cache of just the provider catalogs the user enabled.
+ */
 function findCatalogDirs(): string[] {
   const dirs: string[] = [];
   if (process.env.PI_AI_DATA_DIR) dirs.push(process.env.PI_AI_DATA_DIR);

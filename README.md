@@ -43,6 +43,7 @@ Or in interactive mode: `/model`, then filter by the `scnet` provider.
 - **Compat baked from verified gateway behavior:**
   - `deepseek` / `kimi` / `glm` models → `thinkingFormat: "deepseek"` (`thinking: { type: "enabled" }` + `reasoning_effort`)
   - `minimax` / `mimo` models → no thinking format; pi sends plain `reasoning_effort` only (MiniMax rejects the `thinking` param)
+  - `qwen` models → `thinkingFormat: "qwen"` (top-level `enable_thinking` toggle; no effort levels)
   - all models → `maxTokensField: "max_tokens"`, `supportsDeveloperRole: false`, `supportsStore: false`
 - **Dated variants** like `DeepSeek-V4-Flash-0731` ship with the same settings as their base model.
 
